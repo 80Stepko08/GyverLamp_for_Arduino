@@ -243,13 +243,45 @@ void matrixRoutine() {
   }
 }
 
-// ------------------------------ БЕЛАЯ ЛАМПА ------------------------------
+/*   // ------------------------------ БЕЛАЯ ЛАМПА ------------------------------
 void whiteLamp() {
   for (byte y = 0; y < (HEIGHT / 2); y++) {
     CHSV color = CHSV(100, 1, constrain(modes[17].brightness - (long)modes[17].speed * modes[17].brightness / 255 * y / 2, 1, 255));
     for (byte x = 0; x < WIDTH; x++) {
       drawPixelXY(x, y + 8, color);
       drawPixelXY(x, 7 - y, color);
+    }
+  }
+}*/
+// ------------- белый свет (светится горизонтальная полоса по центру лампы; масштаб - высота центральной горизонтальной полосы; скорость - регулировка от холодного к тёплому; яркость - общая яркость) -------------
+// mod by @Fruity
+void whiteLamp()
+{
+  if (loadingFlag)
+  {
+    loadingFlag = false;
+    FastLED.clear();
+
+    uint8_t centerY =  (uint8_t)round(HEIGHT / 2.0F) - 1U;
+    uint8_t bottomOffset = (uint8_t)(!(HEIGHT & 0x01));
+
+    uint8_t fullRows =  centerY / 100.0 * modes[currentMode].scale;
+    uint8_t iPol = (centerY / 100.0 * modes[currentMode].scale - fullRows) * 255;
+
+    for (int16_t y = centerY; y >= 0; y--)
+    {
+      CRGB color = CHSV(
+                     45U,                                                                              // определяем тон
+                     map(modes[currentMode].speed, 0U, 255U, 0U, 170U),                                // определяем насыщенность
+                     y > (centerY - fullRows - 1)                                                      // определяем яркость
+                     ? 255U                                                                            // для центральных горизонтальных полос
+                     : iPol * (y > centerY - fullRows - 2));  // для остальных горизонтальных полос яркость равна либо 255, либо 0 в зависимости от масштаба
+
+      for (uint8_t x = 0U; x < WIDTH; x++)
+      {
+        drawPixelXY(x, y, color);                              // при чётной высоте матрицы максимально яркими отрисуются 2 центральных горизонтальных полосы
+        drawPixelXY(x, HEIGHT + bottomOffset - y - 2U, color); // при нечётной - одна, но дважды
+      }
     }
   }
 }
